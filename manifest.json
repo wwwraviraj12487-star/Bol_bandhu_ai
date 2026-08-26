@@ -1,0 +1,16 @@
+{
+  "name": "Bol Bandhu AI - Ham Yaha Hai Malik",
+  "short_name": "Bol Bandhu",
+  "description": "Bolo Jai Shree Ram, Mobile bolega Ham Yaha Hai Malik",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ff6a00",
+  "theme_color": "#ff6a00",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
