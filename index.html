@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malik Finder FIX</title>
+<style>
+body{background:#000;color:#fff;text-align:center;font-family:system-ui;padding:20px}
+.card{background:#222;padding:20px;border-radius:20px;margin-top:20px;border:2px solid #ff8f00}
+button{padding:18px;width:100%;font-size:20px;font-weight:bold;border-radius:15px;border:none;background:linear-gradient(45deg,#ff8f00,#ff6f00);color:white;margin-top:15px}
+input{width:100%;padding:15px;border-radius:10px;border:2px solid #ff8f00;font-size:18px;text-align:center}
+.flash-on{animation: blink 0.2s infinite}
+@keyframes blink{0%{background:#000}50%{background:#fff}100%{background:#000}}
+</style>
+</head>
+<body>
+<h1>🔦 Ham Yaha Hai Malik 🔦</h1>
+<div class="card">
+<p>Naam Rakho:</p>
+<input id="wakeWord" value="Jai Shree Ram" placeholder="Jai Shree Ram">
+<button onclick="start()">🎤 Chalu Karo - Sunna Shuru Karo</button>
+<button onclick="stop()" style="background:#333">🛑 Band Karo</button>
+<p id="status" style="margin-top:15px;color:yellow">Band Hai</p>
+<p id="heard" style="font-size:16px;color:#aaa"></p>
+<button onclick="testBolo()" style="background:green">🔊 Test - Bolo to kya bolega?</button>
+</div>
+
+<script>
+let recognition;
+let wakeWordList = ["jai shree ram", "जय श्री राम", "jay shree ram", "jaya shree ram"];
+let torchTrack = null;
+let isListening = false;
+
+async function enableTorch(on){
+  try{
+    if(!torchTrack){
+      const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      torchTrack = stream.getVideoTracks()[0];
+    }
+    await torchTrack.applyConstraints({advanced:[{torch:on}]});
+  }catch(e){
+    if(on){ document.body.style.background="white"; document.body.style.color="black"; }
+    else{ document.body.style.background="black"; document.body.style.color="white"; }
+  }
+  if(on) document.body.classList.add('flash-on'); else document.body.classList.remove('flash-on');
+}
+
+function boloMalik(){
+  window.speechSynthesis.cancel();
+  const text = "Ham Yaha Hai Malik";
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = 'hi-IN';
+  msg.volume = 1;
+  msg.rate = 0.8;
+  msg.pitch = 1.1;
+  // Jor se bajne ke liye beep bhi bajao
+  let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  audio.volume=1;
+  audio.play().catch(()=>{});
+
+  window.speechSynthesis.speak(msg);
+
+  // 2 baar bolo taaki pakka sune
+  setTimeout(()=>{ window.speechSynthesis.speak(msg); }, 1000);
+
+  // Flash 10 baar jalao
+  (async ()=>{
+    for(let i=0;i<15;i++){
+      await enableTorch(true);
+      await new Promise(r=>setTimeout(r,200));
+      await enableTorch(false);
+      await new Promise(r=>setTimeout(r,200));
+    }
+    await enableTorch(true);
+    setTimeout(()=>enableTorch(false),4000);
+  })();
+}
+
+function testBolo(){ boloMalik(); }
+
+function start(){
+  const custom = document.getElementById('wakeWord').value.toLowerCase().trim();
+  if(custom) wakeWordList.push(custom);
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){ alert("Chrome me kholo!"); return; }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'hi-IN';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = ()=>{
+    isListening=true;
+    document.getElementById('status').innerText="✅ Sun Raha Hu... Bolo 'Jai Shree Ram'";
+    document.getElementById('status').style.color="#00ff00";
+  }
+  recognition.onend = ()=>{ if(isListening) try{ recognition.start(); }catch(e){} }
+  recognition.onresult = (event)=>{
+    let finalText = "";
+    for(let i=0;i<event.results.length;i++) finalText+=event.results[i][0].transcript+" ";
+    finalText = finalText.toLowerCase();
+    document.getElementById('heard').innerText="Suna: "+event.results[event.results.length-1][0].transcript;
+
+    // Check karo Hindi + English dono me
+    for(let w of wakeWordList){
+      if(finalText.includes(w)){
+        document.getElementById('status').innerText="🔥 MIL GAYA! Bol Raha Hu...";
+        boloMalik();
+        break;
+      }
+    }
+  }
+  try{ recognition.start(); }catch(e){}
+  // Pehle ek baar bol ke dikhao permission ke liye
+  setTimeout(()=>{ window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); },100);
+}
+
+function stop(){
+  isListening=false;
+  if(recognition) recognition.stop();
+  document.getElementById('status').innerText="🛑 Band Hai";
+  enableTorch(false);
+  document.body.classList.remove('flash-on');
+  document.body.style.background="black";
+  document.body.style.color="white";
+}
+</script>
+</body>
+</html>
