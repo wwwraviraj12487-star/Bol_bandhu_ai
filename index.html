@@ -3,13 +3,19 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Malik Finder FIX</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#ff8f00">
 <style>
 body{background:#000;color:#fff;text-align:center;font-family:system-ui;padding:20px}
 .card{background:#222;padding:20px;border-radius:20px;margin-top:20px;border:2px solid #ff8f00}
-button{padding:18px;width:100%;font-size:20px;font-weight:bold;border-radius:15px;border:none;background:linear-gradient(45deg,#ff8f00,#ff6f00);color:white;margin-top:15px}
-input{width:100%;padding:15px;border-radius:10px;border:2px solid #ff8f00;font-size:18px;text-align:center}
+button{padding:18px;width:100%;font-size:20px;font-weight:bold;border-radius:15px;border:none;background:linear-gradient(45deg,#ff8f00,#ff6f00);color:white;margin-top:15px;cursor:pointer}
+input{width:100%;padding:15px;border-radius:10px;border:2px solid #ff8f00;font-size:18px;text-align:center;box-sizing:border-box}
 .flash-on{animation: blink 0.2s infinite}
 @keyframes blink{0%{background:#000}50%{background:#fff}100%{background:#000}}
+#installBtn{display:none;background:linear-gradient(45deg,#00c853,#00e676)!important;border:2px solid white; animation: pulse 1s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -22,6 +28,11 @@ input{width:100%;padding:15px;border-radius:10px;border:2px solid #ff8f00;font-s
 <p id="status" style="margin-top:15px;color:yellow">Band Hai</p>
 <p id="heard" style="font-size:16px;color:#aaa"></p>
 <button onclick="testBolo()" style="background:green">🔊 Test - Bolo to kya bolega?</button>
+</div>
+
+<div class="card" style="border-color:#00e676">
+  <button id="installBtn">📲 Direct Mobile Me Install Karo</button>
+  <p style="font-size:14px;color:#aaa;margin-top:10px">1 Click me App ban jayega, bina Play Store ke!</p>
 </div>
 
 <script>
@@ -52,17 +63,11 @@ function boloMalik(){
   msg.volume = 1;
   msg.rate = 0.8;
   msg.pitch = 1.1;
-  // Jor se bajne ke liye beep bhi bajao
   let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
   audio.volume=1;
   audio.play().catch(()=>{});
-
   window.speechSynthesis.speak(msg);
-
-  // 2 baar bolo taaki pakka sune
   setTimeout(()=>{ window.speechSynthesis.speak(msg); }, 1000);
-
-  // Flash 10 baar jalao
   (async ()=>{
     for(let i=0;i<15;i++){
       await enableTorch(true);
@@ -80,15 +85,12 @@ function testBolo(){ boloMalik(); }
 function start(){
   const custom = document.getElementById('wakeWord').value.toLowerCase().trim();
   if(custom) wakeWordList.push(custom);
-
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SpeechRecognition){ alert("Chrome me kholo!"); return; }
-
   recognition = new SpeechRecognition();
   recognition.lang = 'hi-IN';
   recognition.continuous = true;
   recognition.interimResults = true;
-
   recognition.onstart = ()=>{
     isListening=true;
     document.getElementById('status').innerText="✅ Sun Raha Hu... Bolo 'Jai Shree Ram'";
@@ -100,8 +102,6 @@ function start(){
     for(let i=0;i<event.results.length;i++) finalText+=event.results[i][0].transcript+" ";
     finalText = finalText.toLowerCase();
     document.getElementById('heard').innerText="Suna: "+event.results[event.results.length-1][0].transcript;
-
-    // Check karo Hindi + English dono me
     for(let w of wakeWordList){
       if(finalText.includes(w)){
         document.getElementById('status').innerText="🔥 MIL GAYA! Bol Raha Hu...";
@@ -111,7 +111,6 @@ function start(){
     }
   }
   try{ recognition.start(); }catch(e){}
-  // Pehle ek baar bol ke dikhao permission ke liye
   setTimeout(()=>{ window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); },100);
 }
 
@@ -124,6 +123,27 @@ function stop(){
   document.body.style.background="black";
   document.body.style.color="white";
 }
+
+// --- DIRECT INSTALL LOGIC ---
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'block';
+});
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      alert('Ho gaya Malik! App Install Ho Gaya! Home Screen dekho!');
+    }
+    deferredPrompt = null;
+    document.getElementById('installBtn').style.display = 'none';
+  } else {
+    alert('Malik, Chrome ke 3 dot pe click karke \"Add to Home Screen\" dabao!');
+  }
+});
 </script>
 </body>
 </html>
